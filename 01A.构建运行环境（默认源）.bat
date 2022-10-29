@@ -2,4 +2,5 @@
 cd bin
 python.exe -m pip install -r ..\requirements.txt --no-warn-script-location
 python.exe -m pip install torch --extra-index-url https://download.pytorch.org/whl/cu113 --no-warn-script-location
+python.exe -m pip install basicsr --no-warn-script-location
 pause
