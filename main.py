@@ -635,6 +635,18 @@ def main():
             half=args.model.endswith('half'),
             gpu_id=None)
 
+        # realesrganmodel=RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4)
+        # upsampler = RealESRGANer(
+        #     scale=4,
+        #     model_path='data\\realesrgan\\RealESRGAN_x4plus_anime_6B.pth',
+        #     dni_weight=None,
+        #     model=realesrganmodel,
+        #     tile=0,
+        #     tile_pad=10,
+        #     pre_pad=0,
+        #     half=args.model.endswith('half'),
+        #     gpu_id=None)
+
         print("RealESRGAN Loaded")
 
 
@@ -940,7 +952,7 @@ def main():
                 print("anime4k", (time.perf_counter() - tic) * 1000)
                 tic = time.perf_counter()
         if args.realesrgan:
-            postprocessed_image,_ =upsampler.enhance(postprocessed_image,4)
+            postprocessed_image,_ =upsampler.enhance(postprocessed_image,4,'bicubic')
             if args.perf == 'main':
                 print("RealESRGAN", (time.perf_counter() - tic) * 1000)
                 tic = time.perf_counter()
