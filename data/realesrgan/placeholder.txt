@@ -1,0 +1,1 @@
+This is the folder to extract the RealESRGAN model to.
