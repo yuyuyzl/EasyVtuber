@@ -34,6 +34,9 @@ from tha3.util import torch_linear_to_srgb, resize_PIL_image, extract_PIL_image_
     extract_pytorch_image_from_PIL_image
 
 import collections
+from basicsr.archs.rrdbnet_arch import RRDBNet
+from realesrgan import RealESRGANer
+from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 
 
 def convert_linear_to_srgb(image: torch.Tensor) -> torch.Tensor:
@@ -618,6 +621,22 @@ def main():
         )
         a.set_arguments(parameters)
         print("Anime4K Loaded")
+    upsampler=None
+    if args.realesrgan:
+        realesrganmodel=SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu')
+        upsampler = RealESRGANer(
+            scale=4,
+            model_path='data\\realesrgan\\realesr-animevideov3.pth',
+            dni_weight=None,
+            model=realesrganmodel,
+            tile=0,
+            tile_pad=10,
+            pre_pad=0,
+            half=args.model.endswith('half'),
+            gpu_id=None)
+
+        print("RealESRGAN Loaded")
+
 
     position_vector = [0, 0, 0, 1]
     position_vector_0 = None
@@ -920,6 +939,12 @@ def main():
             if args.perf == 'main':
                 print("anime4k", (time.perf_counter() - tic) * 1000)
                 tic = time.perf_counter()
+        if args.realesrgan:
+            postprocessed_image,_ =upsampler.enhance(postprocessed_image,4)
+            if args.perf == 'main':
+                print("RealESRGAN", (time.perf_counter() - tic) * 1000)
+                tic = time.perf_counter()
+
         if args.alpha_split:
             alpha_image = cv2.merge(
                 [postprocessed_image[:, :, 3], postprocessed_image[:, :, 3], postprocessed_image[:, :, 3]])
