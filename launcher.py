@@ -20,6 +20,7 @@ default_arg = {
     'cache_simplify': 1,
     'cache_size': 1,
     'model_type': 0,
+    'auto_mouth_threshold':0
 }
 
 try:
@@ -64,6 +65,7 @@ def launch():
         'cache_simplify': cache_simplify.get(),
         'cache_size': cache_size.get(),
         'model_type': model_type.get(),
+        'auto_mouth_threshold': auto_mouth_threshold.get()
     }
 
     if args['input'] == 0:
@@ -141,6 +143,9 @@ def launch():
                 tkinter.messagebox.showinfo('EasyVtuber Launcher',
                                             'Missing Model File: ' + 'data/models/' + model_name + '\nCheck link 00B or README.md for more info.')
                 return
+        if args['auto_mouth_threshold'] is not None:
+            run_args.append('--auto_mouth_threshold')
+            run_args.append(str(args['auto_mouth_threshold']))
 
         run_args.append('--output_size')
         run_args.append('512x512')
@@ -248,6 +253,16 @@ ttk.Checkbutton(frameL, text='Alpha Split', variable=is_alpha_split).pack(fill='
 
 is_bongo = tk.BooleanVar(value=args['is_bongo'])
 ttk.Checkbutton(frameL, text='Bongocat Mode', variable=is_bongo).pack(fill='x', expand=True)
+
+auto_mouth_threshold = tk.IntVar(value=args['auto_mouth_threshold'])
+def validate_int(P):
+    if P.isdigit():
+        return True
+    return False
+ttk.Label(frameL, text='Auto Mouth Threshold: ').pack()
+threshold_entry = ttk.Entry(frameL, textvariable=auto_mouth_threshold, validate='key', validatecommand=(root.register(validate_int), '%P'))
+threshold_entry.pack(fill='x', expand=True)
+    
 
 output = tk.IntVar(value=args['output'])
 ttk.Label(frameL, text="Output").pack(fill='x', expand=True)

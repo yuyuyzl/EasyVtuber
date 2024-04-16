@@ -685,10 +685,17 @@ def main():
             pose_vector_c = [0.0] * 6
 
             if len(blender_data)!=0:
-                mouth_eye_vector_c[2] = 1-blender_data['leftEyeOpen']
-                mouth_eye_vector_c[3] = 1-blender_data['rightEyeOpen']
 
-                mouth_eye_vector_c[14] = max(blender_data['MouthOpen'],0)
+                def sigmoid(x):
+                    return 1 / (1 + math.exp(-(x-0.5)*10))
+                # 用了sigmoid降低两端大概0.2范围的灵敏度
+                mouth_eye_vector_c[2] = sigmoid(1-blender_data['leftEyeOpen'])
+                mouth_eye_vector_c[3] = sigmoid(1-blender_data['rightEyeOpen'])
+                print(mouth_eye_vector_c[2])
+
+                # 用了sqrt提升低数值的灵敏度
+                mouth_eye_vector_c[14] = math.sqrt(max(blender_data['MouthOpen'],0))
+
                 # print(mouth_eye_vector_c[14])
 
                 mouth_eye_vector_c[25] = -blender_data['eyeRotationY']*3-(blender_data['rotationX'])/57.3*1.5
@@ -847,6 +854,23 @@ def main():
             pose_vector_c[0] = (x_angle - 1.5) * 1.6
             pose_vector_c[1] = y_angle * 2.0  # temp weight
             pose_vector_c[2] = (z_angle + 1.5) * 2  # temp weight
+
+
+        if args.auto_mouth_threshold != 0:
+            if 'stream' not in locals().keys():
+                import pyaudio
+                p = pyaudio.PyAudio()
+                stream = p.open(format=pyaudio.paInt16,
+                                channels=2,
+                                rate=44100,
+                                input=True,
+                                output_device_index=p.get_default_input_device_info()["index"])
+            data = stream.read(1024)
+            # Convert data to numpy array
+            data = np.frombuffer(data, dtype=np.int16)
+            # Calculate volume
+            volume = min(1,np.max(np.abs(data))/args.auto_mouth_threshold)
+            mouth_eye_vector_c[14] = volume
 
         pose_vector_c[3] = pose_vector_c[1]
         pose_vector_c[4] = pose_vector_c[2]
