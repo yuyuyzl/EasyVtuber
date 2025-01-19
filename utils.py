@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 
-def linear_rgb2srgb(image):
+def srgb2linear_rgb(image):
     """
     convert linear rgb image to srgb image
     Args:
@@ -14,7 +14,7 @@ def linear_rgb2srgb(image):
     return np.where(image <= 0.04045, image / 12.92, ((image + 0.055) / 1.055) ** 2.4)
 
 
-def srgb2linear_rgb(image):
+def linear_rgb2srgb(image):
     """
     convert srgb image to linear rgb image
     Args:
@@ -36,7 +36,7 @@ def preprocessing_image(image):
     """
     np_image = np.array(image) / 255
     clipped_image = np.clip(np_image, 0, 1)
-    srgb_image = linear_rgb2srgb(clipped_image)
+    srgb_image = srgb2linear_rgb(clipped_image)
     h, w, c = srgb_image.shape
     linear_image = srgb_image.reshape(h * w, c)
     for pixel in linear_image:
