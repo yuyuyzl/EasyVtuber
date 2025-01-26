@@ -53,7 +53,6 @@ parser.add_argument('--cacher_quality', type=int, default=85)
 parser.add_argument('--use_sr', action='store_true')
 parser.add_argument('--sr_x4', action='store_true')
 parser.add_argument('--sr_half', action='store_true')
-parser.add_argument('--sr_noise', type=int, default=1)
 
 parser.add_argument('--frame_rate_limit', type=int, default=30)
 
@@ -64,8 +63,7 @@ if args.cache is not None:
     args.max_cache_len=convert_to_byte(args.cache)/pow(1024, 3) #In gigabytes
 else:
     args.max_cache_len=0
-if args.max_cache_len == 0:
-    args.use_cacher = False
+
 if args.gpu_cache is not None:
     args.max_gpu_cache_len=convert_to_byte(args.gpu_cache)/pow(1024, 3) #In gigabytes
 else:
@@ -73,7 +71,4 @@ else:
 if args.output_webcam is None and args.output_dir is None: args.debug = True
 
 args.model_output_size = 1024 if args.use_sr else 512
-
-if args.use_sr and args.use_interpolation:
-    args.use_interpolation = False
 
