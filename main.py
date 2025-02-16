@@ -29,6 +29,7 @@ from pyanime4k import ac
 from tha2.mocap.ifacialmocap_constants import *
 
 from args import args
+import copy
 
 from tha3.util import torch_linear_to_srgb, resize_PIL_image, extract_PIL_image_from_filelike, \
     extract_pytorch_image_from_PIL_image
@@ -349,8 +350,6 @@ class ModelClientProcess(Process):
 
                               model_seperable = args.model_seperable,
                               model_half=args.model_half, 
-                              model_cache=args.model_cache, 
-                              model_vram_cache=args.model_vram_cache,
                               model_cache_size=args.max_gpu_cache_len, 
                               model_use_eyebrow=args.eyebrow,
 
@@ -358,14 +357,12 @@ class ModelClientProcess(Process):
                               interpolation_scale=args.interpolation_scale,
                               interpolation_half=args.interpolation_half,
 
-                              use_cacher=args.use_cacher, 
                               cacher_quality=args.cacher_quality,
                               cacher_ram_size=args.max_cache_len, 
 
                               use_sr = args.use_sr, 
                               sr_half= args.sr_half, 
-                              sr_x4=args.sr_x4,
-                              sr_noise=args.sr_noise)
+                              sr_x4=args.sr_x4)
         self.model.setImage(self.input_image)
         input_pose = np.zeros((1,45), dtype=np.float32)
 
@@ -385,7 +382,7 @@ class ModelClientProcess(Process):
             if model_input is None: continue
             frame_interval = (1 / args.frame_rate_limit) if not args.use_interpolation else (1 / args.frame_rate_limit * args.interpolation_scale)
             now = time.time()
-            if now < frame_interval + last_process_time - 0.005: continue #
+            if now < (frame_interval * 0.9) + last_process_time: continue #
             last_process_time = now
             simplify_arr = [1000] * ifm_converter.pose_size
             if args.simplify >= 1:
@@ -516,11 +513,8 @@ class ModelClientProcess(Process):
                 self.model_fps_number.value = model_fps()
                 if self.model.cacher is not None:
                     self.cache_hit_ratio.value = self.model.cacher.hits / (self.model.cacher.hits + self.model.cacher.miss + 1)
-                try:
-                    if args.use_tensorrt and args.model_cache and args.model_vram_cache:
-                        self.gpu_cache_hit_ratio.value = self.model.tha.morpher_cacher.hits / (self.model.tha.morpher_cacher.hits + self.model.tha.morpher_cacher.miss)
-                except:
-                    pass
+                if args.use_tensorrt:
+                    self.gpu_cache_hit_ratio.value = self.model.tha.morpher_cacher.hits / (self.model.tha.morpher_cacher.hits + self.model.tha.morpher_cacher.miss)
 
 
 @torch.no_grad()
@@ -651,6 +645,8 @@ def main():
 
     print("Ready. Close this console to exit.")
 
+    mouth_eye_vector_c_hist = []
+
     while True:
         # ret, frame = cap.read()
         # input_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -725,6 +721,16 @@ def main():
                 position_vector[0] = -(blender_data['translationX']-position_vector_0[0])*0.1
                 position_vector[1] = -(blender_data['translationY']-position_vector_0[1])*0.1
                 position_vector[2] = -(blender_data['translationZ']-position_vector_0[2])*0.1
+
+            # Apply filter
+            if len(mouth_eye_vector_c_hist) == 0:
+                for _ in range(3):
+                    mouth_eye_vector_c_hist.append(copy.deepcopy(mouth_eye_vector_c))
+            else:
+                mouth_eye_vector_c_hist.pop(0)
+                mouth_eye_vector_c_hist.append(mouth_eye_vector_c)
+            mouth_eye_vector_c[25] = mouth_eye_vector_c_hist[0][25] * 0.2 + mouth_eye_vector_c_hist[1][25] * 0.5 + mouth_eye_vector_c_hist[2][25] * 0.3 
+            mouth_eye_vector_c[26] = mouth_eye_vector_c_hist[0][26] * 0.2 + mouth_eye_vector_c_hist[1][26] * 0.5 + mouth_eye_vector_c_hist[2][26] * 0.3 
 
         elif args.ifm is not None:
             # get pose from ifm
@@ -907,15 +913,16 @@ def main():
         if args.bongo:
             rotate_angle -= 5
         
-        rm = cv2.getRotationMatrix2D((args.model_output_size / 2, args.model_output_size / 2), rotate_angle, k_scale)
-        rm[0, 2] += dx + args.model_output_size / 2 - args.model_output_size / 2
-        rm[1, 2] += dy + args.model_output_size / 2 - args.model_output_size / 2
+        if args.extend_movement or args.bongo:
+            rm = cv2.getRotationMatrix2D((args.model_output_size / 2, args.model_output_size / 2), rotate_angle, k_scale)
+            rm[0, 2] += dx
+            rm[1, 2] += dy
 
 
-        postprocessed_image = cv2.warpAffine(
-            postprocessed_image,
-            rm,
-            (args.model_output_size, args.model_output_size))
+            postprocessed_image = cv2.warpAffine(
+                postprocessed_image,
+                rm,
+                (args.model_output_size, args.model_output_size))
 
         if args.perf == 'main':
             print("postprocess", (time.perf_counter() - tic) * 1000)

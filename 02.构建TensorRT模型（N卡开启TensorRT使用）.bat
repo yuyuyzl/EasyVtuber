@@ -7,3 +7,5 @@ call conda activate ezvtb_rt_venv
 call conda env list
 
 python ezvtb_rt_interface.py
+
+pause
