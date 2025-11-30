@@ -10,7 +10,13 @@ IF %ERRORLEVEL% NEQ 0 (
         @RD /S /Q %~dp0envs\miniconda3
         mkdir %~dp0envs\miniconda3
         echo "Downloading miniconda..."
-        powershell -Command "(New-Object Net.WebClient).DownloadFile('https://repo.anaconda.com/miniconda/Miniconda3-py310_24.9.2-0-Windows-x86_64.exe', '.\envs\miniconda3.exe')"
+        
+        powershell -Command "iwr -uri 'https://repo.anaconda.com/miniconda/Miniconda3-py310_24.9.2-0-Windows-x86_64.exe' -OutFile '.\envs\miniconda3.exe'"
+        if not exist %~dp0envs\miniconda3.exe (
+            echo "Failed to download Miniconda installer."
+            pause
+            exit /b 1
+        )
 
         echo "Installling minconda..."
         start /wait "" %~dp0envs\miniconda3.exe /S /AddToPath=0 /RegisterPython=0 /InstallationType=JustMe /D=%~dp0envs\miniconda3
