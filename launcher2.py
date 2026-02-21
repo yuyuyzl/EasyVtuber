@@ -651,9 +651,15 @@ class LauncherPanel(wx.Panel):
         self.btnLaunch.SetLabelText('Working...')
 
         if p is not None and p.poll() is None:
-            stop_inference_process()
+            self.btnLaunch.Disable()
             self.statusCtrl.Clear()
             self.btnLaunch.SetLabelText("Save & Launch")
+            def _stop_async():
+                stop_inference_process()
+                wx.CallAfter(self.btnLaunch.Enable)
+
+            threading.Thread(target=_stop_async, daemon=True).start()
+            return
         else:
             # 如果启动器是用pythonw启动的，使用python.exe来启动main以便捕获控制台输出
             p = None
