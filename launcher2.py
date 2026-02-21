@@ -1,3 +1,4 @@
+import atexit
 import ctypes
 import os
 import subprocess
@@ -123,6 +124,44 @@ def scanStudentModels():
 
 refreshList()
 scanStudentModels()
+
+
+def _run_hidden_taskkill(pid):
+    creation_flags = 0
+    if sys.platform == 'win32':
+        creation_flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
+    subprocess.run(
+        ['taskkill', '/F', '/PID', str(pid), '/T'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=creation_flags,
+        check=False
+    )
+
+
+def stop_inference_process():
+    global p
+    if p is None:
+        return False
+
+    try:
+        if p.poll() is None:
+            _run_hidden_taskkill(p.pid)
+            try:
+                p.wait(timeout=1.5)
+            except Exception:
+                pass
+    except Exception:
+        try:
+            _run_hidden_taskkill(p.pid)
+        except Exception:
+            pass
+    finally:
+        p = None
+    return True
+
+
+atexit.register(stop_inference_process)
 
 def min_cutoff_mapper(value, revert=False):
     """
@@ -611,20 +650,19 @@ class LauncherPanel(wx.Panel):
         f.close()
         self.btnLaunch.SetLabelText('Working...')
 
-        if p is not None:
-            creation_flags = 0
-            if sys.platform == 'win32':
-                # CREATE_NO_WINDOW = 0x08000000
-                creation_flags = 0x08000000
-            subprocess.run(['taskkill', '/F', '/PID', str(p.pid), '/T'], 
-                          stdout=subprocess.DEVNULL,
-                          stderr=subprocess.DEVNULL,
-                          creationflags=creation_flags)
-            p = None
+        if p is not None and p.poll() is None:
+            self.btnLaunch.Disable()
             self.statusCtrl.Clear()
             self.btnLaunch.SetLabelText("Save & Launch")
+            def _stop_async():
+                stop_inference_process()
+                wx.CallAfter(self.btnLaunch.Enable)
+
+            threading.Thread(target=_stop_async, daemon=True).start()
+            return
         else:
             # 如果启动器是用pythonw启动的，使用python.exe来启动main以便捕获控制台输出
+            p = None
             python_exe = sys.executable
             if 'pythonw' in python_exe.lower():
                 python_exe = python_exe.replace('pythonw.exe', 'python.exe').replace('pythonw', 'python')
@@ -764,7 +802,7 @@ class LauncherPanel(wx.Panel):
             creation_flags = 0
             if sys.platform == 'win32':
                 # CREATE_NO_WINDOW = 0x08000000
-                creation_flags = 0x08000000
+                creation_flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0x00000200)
             p = subprocess.Popen(
                 run_args,
                 stdout=subprocess.PIPE,
@@ -792,16 +830,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnClose(self, e):
-        global p
-        if p is not None:
-            creation_flags = 0
-            if sys.platform == 'win32':
-                # CREATE_NO_WINDOW = 0x08000000
-                creation_flags = 0x08000000
-            subprocess.run(['taskkill', '/F', '/PID', str(p.pid), '/T'], 
-                          stdout=subprocess.DEVNULL,
-                          stderr=subprocess.DEVNULL,
-                          creationflags=creation_flags)
+        stop_inference_process()
         e.Skip()
 
     def InitUi(self):
