@@ -165,14 +165,6 @@ conda 24.11.3
 ```
 以上方式可以保证conda环境被你选定的Ananconda统一管理。若没有此需求可以忽略直接运行下一步。
 
-### 下载 TensorRT-RTX （Nvidia开发必选）
-```
-curl -L -o trt_rtx.zip https://developer.nvidia.com/downloads/trt/rtx_sdk/secure/1.3/TensorRT-RTX-1.3.0.35-win10-amd64-cuda-12.9-Release-external.zip
-tar -xf trt_rtx.zip "TensorRT-RTX-1.3.0.35" && ren "TensorRT-RTX-1.3.0.35" "TensorRT-RTX-1.3.0.35_cu129" && del trt_rtx.zip
-# Adding the bin folder to PATH
-cd TensorRT-RTX-1.3.0.35_cu129\bin && set PATH=%CD%;%PATH%
-```
-也可以在Window 环境变量管理器 GUI中将`TensorRT-RTX-1.3.0.35_cu129\bin`在`PATH`环境变量中添加来持久化
 
 ### 准备Conda 环境
 ```
@@ -182,10 +174,15 @@ conda install conda-forge::pycuda
 conda install -c nvidia/label/cuda-12.9.1 cuda-nvcc-dev_win-64 cudnn cuda-runtime
 ```
 
-### 安装 TensorRT-RTX 的 Python Binding
+### 下载 TensorRT-RTX （Nvidia开发必选）
+1. Go to https://developer.nvidia.com/tensorrt-rtx download for windows cuda129
+2. Unzip downloaded folder
+3. Add bin folder to environment PATH
+4. Activate your python environment and install like below:
+```bash
+pip install D:\TensorRT-RTX-1.4.0.76_cu129\python\tensorrt_rtx-1.4.0.76-cp310-none-win_amd64.whl
 ```
-pip install TensorRT-RTX-1.3.0.35_cu129\python\tensorrt_rtx-1.3.0.35-cp310-none-win_amd64.whl
-```
+也可以在Window 环境变量管理器 GUI中将`TensorRT-RTX-1.4.0.76_cu129\bin`在`PATH`环境变量中添加来持久化
 
 ### 克隆项目和子项目
 ```

@@ -269,6 +269,14 @@ def _important_log_line(line):
             name = os.path.basename(path)
             if name:
                 return f'Building: {name}'
+    # TRT: Loading engine from file ...\filename.trt
+    if '[TRT]' in line and 'Loading engine from file' in line:
+        idx = line.find('Loading engine from file')
+        if idx != -1:
+            path = line[idx + len('Loading engine from file'):].strip().strip('.').strip().rstrip('\r\n')
+            name = os.path.basename(path)
+            if name:
+                return f'Loading: {name}'
     # TRT: Loading ONNX file from path ...\filename.onnx
     if '[TRT]' in line and 'Loading ONNX file from path' in line:
         idx = line.find('Loading ONNX file from path')

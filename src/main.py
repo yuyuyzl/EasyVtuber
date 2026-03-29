@@ -98,7 +98,6 @@ def main():
         print("Using OpenCV windows for output display.")
 
     pipeline_fps = FPS()
-    last_frame_time = None  # 上一帧输出时间，用于打印帧时间差
     last_batch_start_time = None  # 上一批就绪时间，用于周期估计
     n_frames = args.interpolation_scale
     min_period = n_frames * interval if interval > 0 else n_frames / 60.0  # 60fps 下本批最少占用时间
@@ -135,7 +134,6 @@ def main():
                 cv2.imshow("EasyVtuber Debug Frame", np_ret_shms[i])
                 cv2.waitKey(1)
             now_send = time.perf_counter()
-            last_frame_time = now_send
             # 限速：下一帧最早在 last_time + interval，若已落后于当前时间则对齐到 now
             if interval > 0:
                 last_time += interval

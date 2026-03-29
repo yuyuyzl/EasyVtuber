@@ -152,3 +152,6 @@ data/
 onnx_model_tha4/fp16
 onnx_model_tha4/fp32
 onnx_model_tha4/
+
+# Tensorrt temporary files
+*.pch 
